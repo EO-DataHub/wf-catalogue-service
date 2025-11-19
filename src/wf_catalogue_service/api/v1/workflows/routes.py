@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.security import HTTPAuthorizationCredentials  # noqa: TC002
 
 from wf_catalogue_service.api.auth.helpers import validate_access_token
 from wf_catalogue_service.api.common import PagedResponse
@@ -15,9 +16,6 @@ from wf_catalogue_service.api.v1.workflows.schemas import (
     WorkflowRegistrationRequest,
     WorkflowSummary,
 )
-
-if TYPE_CHECKING:
-    from fastapi.security import HTTPAuthorizationCredentials
 
 workflow_router = APIRouter(
     prefix="/workflows",
