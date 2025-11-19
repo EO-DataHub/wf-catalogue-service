@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
+from wf_catalogue_service.api.auth.helpers import validate_access_token
 from wf_catalogue_service.api.common import PagedResponse
 from wf_catalogue_service.api.v1.workflows.schemas import (
     WorkflowDetails,
@@ -15,13 +16,16 @@ from wf_catalogue_service.api.v1.workflows.schemas import (
     WorkflowSummary,
 )
 
+if TYPE_CHECKING:
+    from fastapi.security import HTTPAuthorizationCredentials
+
 workflow_router = APIRouter(
     prefix="/workflows",
     tags=["Workflows"],
 )
 
 
-@workflow_router.get("/")
+@workflow_router.get("")
 async def get_workflows(query: Annotated[WorkflowFilterRequest, Query()]) -> PagedResponse[WorkflowSummary]:
     """Get workflows."""
     # TODO - dummy implementation for now - change once DB becomes available
@@ -67,6 +71,7 @@ async def get_workflows(query: Annotated[WorkflowFilterRequest, Query()]) -> Pag
 @workflow_router.get("/{workflow_id}")
 async def get_workflow_details(workflow_id: str) -> WorkflowDetails:
     """Get workflow details."""
+    # TODO - dummy implementation for now - change once DB becomes available
     return WorkflowDetails(
         id=workflow_id,
         name=f"test-workflow-{workflow_id}",
@@ -74,9 +79,13 @@ async def get_workflow_details(workflow_id: str) -> WorkflowDetails:
     )
 
 
-@workflow_router.post("/", response_model=WorkflowDetails, status_code=HTTPStatus.CREATED)
-async def register_workflow(data: WorkflowRegistrationRequest) -> WorkflowDetails:
+@workflow_router.post("", response_model=WorkflowDetails, status_code=HTTPStatus.CREATED)
+async def register_workflow(
+    data: WorkflowRegistrationRequest,
+    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
+) -> WorkflowDetails:
     """Register workflow."""
+    # TODO - dummy implementation for now - change once DB becomes available
     return WorkflowDetails(
         id="1",
         name=data.name,
