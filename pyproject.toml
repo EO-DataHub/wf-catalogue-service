@@ -27,13 +27,20 @@ classifiers = [
 ]
 license = { text = "BSD-3-Clause" }
 dependencies = [
+    "aiodns>=3.5.0",
+    "aiohttp-retry>=2.9.1",
+    "aiohttp[speedups]>=3.13.2",
     "click>=8.1.8",
+    "cryptography>=46.0.3",
     "fastapi>=0.121.2",
     "matplotlib>=3.10.1",
+    "oauthlib>=3.3.1",
     "pydantic>=2.11.4",
     "pydantic-settings>=2.9.1",
+    "pyjwt>=2.10.1",
     "python-dotenv>=1.1.0",
     "pyyaml>=6.0.2",
+    "requests-oauthlib>=2.0.0",
     "uvicorn>=0.38.0",
 ]
 
