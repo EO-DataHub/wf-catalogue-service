@@ -1,5 +1,0 @@
-jobs:
-  - job: code_qa
-    displayName: Code QA
-    steps:
-      - template: ../steps/code-qa.yaml

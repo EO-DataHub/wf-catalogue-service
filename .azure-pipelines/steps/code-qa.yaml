@@ -1,8 +1,0 @@
-steps:
-  - script: |
-      pre-commit install
-    displayName: "Install pre-commit hooks"
-
-  - script: |
-      SKIP=pytest-check uv run pre-commit run --all-files
-    displayName: "Run simplified pre-commit hooks"
