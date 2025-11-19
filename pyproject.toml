@@ -28,31 +28,19 @@ classifiers = [
 license = { text = "MIT" }
 dependencies = [
     "click>=8.1.8",
+    "fastapi>=0.121.2",
     "matplotlib>=3.10.1",
-    "mlflow>=2.22.0",
-    "numpy>=2.2.5",
-    "pandas>=2.2.3",
-    "psutil>=7.0.0",
-    "pyarrow>=19.0.1",
     "pydantic>=2.11.4",
     "pydantic-settings>=2.9.1",
     "python-dotenv>=1.1.0",
     "pyyaml>=6.0.2",
-    "scikit-learn>=1.6.1",
-    "seaborn>=0.13.2",
-    "streamlit>=1.47.1",
-    "tqdm>=4.67.1",
 ]
 
 [dependency-groups]
 dev = [
     "coverage>=7.8.0",
     "interrogate>=1.7.0",
-    "jupyter>=1.1.1",
-    "jupyterlab>=4.4.1",
     "mypy>=1.15.0",
-    "notebook>=7.4.1",
-    "pandas-stubs>=2.3.0.250703",
     "pre-commit>=4.2.0",
     "pretty>=0.1",
     "pytest>=8.3.5",
