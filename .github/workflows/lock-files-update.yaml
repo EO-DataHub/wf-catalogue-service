@@ -1,0 +1,45 @@
+name: lock-files-update
+
+on:
+  schedule:
+    # Run every 1st day of the month at 00:00
+    - cron: "0 0 1 * *"
+  # Allow running manually from GitHub UI as well
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  update-lock-file:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Check if the lockfile is up-to-date
+        run: |
+          uv lock --check
+
+      - name: Update dependencies
+        run: |
+          uv lock --upgrade
+
+      - name: Create a pull request
+        uses: peter-evans/create-pull-request@2e50522bdf313efe32e5628afead9048374012ed # v7.0.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: feat/uv-lock-update
+          title: "chore: Update lock-files"
+          body: "Monthly automatic update of lock-files"
+          base: main
+          commit-message: "chore: update lock-files"
+          author: github-actions <actions@github.com>
+          reviewers: Spyrosoft S.A.
+          assignees: Spyrosoft S.A.
+          labels: enhancement

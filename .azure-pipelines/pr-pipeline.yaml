@@ -1,0 +1,29 @@
+trigger: none
+
+pr:
+  - main
+
+pool:
+  vmImage: ubuntu-latest
+
+parameters:
+  - name: env
+    type: string
+    default: dev
+    values:
+      - dev
+      - staging
+      - prod
+
+stages:
+  - stage: pre_commit
+    displayName: Run pre-commit hooks
+    jobs:
+      - template: ./jobs/code-qa.yaml
+
+  - stage: tests
+    displayName: Run tests
+    jobs:
+      - template: ./jobs/test-suite.yaml
+        parameters:
+          env: ${{ parameters.env }}
