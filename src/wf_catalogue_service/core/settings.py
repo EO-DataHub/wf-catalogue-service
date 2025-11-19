@@ -4,7 +4,7 @@ Examples:
     ```python
     import logging
 
-    from src.core.settings import current_settings
+    from core.settings import current_settings
 
 
     # log current environment
