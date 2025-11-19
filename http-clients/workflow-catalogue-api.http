@@ -1,7 +1,5 @@
-@api-host=http://localhost:8000
-@api-prefix=api
 @api-version=v1.0
-@api-url={{api-host}}/{{api-prefix}}/{{api-version}}
+@api-url={{api_url}}/{{api-version}}
 @health-url={{api-url}}/health
 @workflows-url={{api-url}}/workflows
 
@@ -17,6 +15,7 @@ GET {{workflows-url}}/1
 
 ### Register WF
 POST {{workflows-url}}
+Authorization: Bearer {{$auth.token("auth-id")}}
 
 {
     "name": "dummy-wf",
