@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
+import aiohttp
 import jwt
 import jwt.exceptions
+import requests
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWKClient  # type: ignore[attr-defined]
 
-from wf_catalogue_service.api.auth.schemas import IntrospectResponse
+from wf_catalogue_service.api.auth.schemas import IntrospectResponse, TokenResponse
 from wf_catalogue_service.core.settings import current_settings
 
 _HEADERS = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -82,3 +84,46 @@ def try_get_workspace_from_token_or_request_body(
         return parsed_token.preferred_username
     # Raise exception otherwise
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect credentials")
+
+
+async def get_token_async() -> TokenResponse:
+    """Gets token from EODH."""
+    settings = current_settings()
+    async with (
+        aiohttp.ClientSession() as session,
+        session.post(
+            url=settings.eodh.token_url,
+            headers=_HEADERS,
+            data={
+                "client_id": settings.eodh.client_id,
+                "username": settings.eodh.username,
+                "password": settings.eodh.password,
+                "grant_type": "password",
+                "scope": "openid",
+            },
+            timeout=TIMEOUT,
+        ) as response,
+    ):
+        if response.status != status.HTTP_200_OK:
+            raise HTTPException(status_code=response.status, detail=await response.json())
+        return TokenResponse(**await response.json())
+
+
+def get_token() -> TokenResponse:
+    """Gets token from EODH."""
+    settings = current_settings()
+    response = requests.post(
+        url=settings.eodh.token_url,
+        headers=_HEADERS,
+        data={
+            "client_id": settings.eodh.client_id,
+            "username": settings.eodh.username,
+            "password": settings.eodh.password,
+            "grant_type": "password",
+            "scope": "openid",
+        },
+        timeout=TIMEOUT,
+    )
+    if response.status_code != status.HTTP_200_OK:
+        raise HTTPException(status_code=response.status_code, detail=response.json())
+    return TokenResponse(**response.json())
