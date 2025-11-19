@@ -1,0 +1,24 @@
+@api-host=http://localhost:8000
+@api-prefix=api
+@api-version=v1.0
+@api-url={{api-host}}/{{api-prefix}}/{{api-version}}
+@health-url={{api-url}}/health
+@workflows-url={{api-url}}/workflows
+
+
+### Ping
+GET {{health-url}}/ping
+
+### Get all WFs
+GET {{workflows-url}}
+
+### Get WF details
+GET {{workflows-url}}/1
+
+### Register WF
+POST {{workflows-url}}
+
+{
+    "name": "dummy-wf",
+    "description": "Dummy WF"
+}
