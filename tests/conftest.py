@@ -40,17 +40,17 @@ def client_fixture(app: FastAPI) -> TestClient:
 
 @pytest.fixture(scope="module")
 def auth_token_module_scoped() -> str:
-    return get_token().access_token  # type: ignore[no-any-return]
+    return get_token().access_token
 
 
 @pytest.fixture
 def auth_token_func_scoped() -> str:
-    return get_token().access_token  # type: ignore[no-any-return]
+    return get_token().access_token
 
 
 @pytest.fixture(scope="session")
 def auth_token_session_scoped() -> str:
-    return get_token().access_token  # type: ignore[no-any-return]
+    return get_token().access_token
 
 
 @pytest.fixture(scope="session")
