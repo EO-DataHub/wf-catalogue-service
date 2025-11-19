@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-from wf_catalogue_service.consts import compute, directories, logging, reproducibility, training
+from wf_catalogue_service.consts import directories, logging
 
 __all__ = [
-    "compute",
     "directories",
     "logging",
-    "reproducibility",
-    "training",
 ]
