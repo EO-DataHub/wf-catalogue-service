@@ -1,26 +1,20 @@
-"""Unit tests for health check endpoints."""
+"""Tests for health check endpoint."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
 from starlette import status
 
 if TYPE_CHECKING:
-    from fastapi.testclient import TestClient
+    from httpx import AsyncClient
 
 
-def test_ping_returns_pong(client: TestClient) -> None:
-    """Test that the ping endpoint returns 'pong'."""
-    response = client.get("/health/ping")
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {"response": "pong"}
-
-
-def test_ping_endpoint_accessibility(client: TestClient) -> None:
-    """Test that the ping endpoint is accessible."""
-    response = client.get("/health/ping")
+@pytest.mark.asyncio
+async def test_health_returns_ok(client: AsyncClient) -> None:
+    """Test that health endpoint returns ok when database is connected."""
+    response = await client.get("/health")
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers["content-type"] == "application/json"
+    assert response.json() == {"status": "ok"}

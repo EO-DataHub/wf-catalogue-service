@@ -23,6 +23,26 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from wf_catalogue_service import consts
 
 
+class DatabaseSettings(BaseModel):
+    """Database connection settings."""
+
+    host: str = "localhost"
+    port: int = 5432
+    name: str = "workflow_catalogue"
+    user: str = "catalogue"
+    password: str = ""
+
+    @property
+    def url(self) -> str:
+        """Async database URL for SQLAlchemy."""
+        return f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.name}"
+
+    @property
+    def sync_url(self) -> str:
+        """Sync database URL for Alembic."""
+        return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.name}"
+
+
 class OAuth2Settings(BaseModel):
     """OAuth2 settings."""
 
@@ -80,7 +100,8 @@ class Settings(BaseSettings):
     """Represents Application Settings with nested configuration sections."""
 
     environment: str = "local"
-    eodh: EODHSettings
+    db: DatabaseSettings = DatabaseSettings()
+    eodh: EODHSettings | None = None
     model_config = SettingsConfigDict(
         env_file=consts.directories.ROOT_DIR / ".env",
         env_file_encoding="utf-8",

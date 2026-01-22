@@ -1,0 +1,49 @@
+{
+    "id": "ndvi-workflow",
+    "type": "Feature",
+    "geometry": null,
+    "conformsTo": [
+        "http://www.opengis.net/doc/IS/ogcapi-records-1/1.0"
+    ],
+    "properties": {
+        "created": "2024-10-14T00:00:00Z",
+        "updated": "2024-10-14T00:00:00Z",
+        "type": "workflow",
+        "title": "NDVI Calculation",
+        "description": "This workflow calculates the Normalized Difference Vegetation Index (NDVI).",
+        "keywords": [
+            "ndvi",
+            "vegetation",
+            "sentinel2"
+        ],
+        "language": "en",
+        "license": "Apache-2.0",
+        "applicableCollections": [
+            "https://eodatahub.org.uk/api/catalogue/stac/catalogs/public/catalogs/ceda-stac-catalogue/collections/sentinel2_ard"
+        ],
+        "contacts": [
+            {
+                "name": "EODH Platform Team",
+                "organization": "EO DataHub",
+                "roles": ["author"]
+            }
+        ],
+        "inputParameters": {
+            "input_cog": {
+                "label": "COG to calculate NDVI from",
+                "type": "raster"
+            }
+        },
+        "application:type": "cwl",
+        "application:container": true,
+        "application:language": "CWL"
+    },
+    "links": [
+        {
+            "rel": "self",
+            "href": "https://eodatahub.org.uk/workflows/ndvi-workflow.json",
+            "type": "application/geo+json",
+            "title": "This record"
+        }
+    ]
+}

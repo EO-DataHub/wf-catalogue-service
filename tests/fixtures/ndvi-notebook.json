@@ -1,0 +1,68 @@
+{
+    "id": "ndvi-notebook",
+    "type": "Feature",
+    "geometry": null,
+    "conformsTo": [
+        "http://www.opengis.net/doc/IS/ogcapi-records-1/1.0"
+    ],
+    "properties": {
+        "created": "2024-10-14T00:00:00Z",
+        "updated": "2024-10-14T00:00:00Z",
+        "type": "notebook",
+        "title": "NDVI Calculation Notebook",
+        "description": "Interactive Jupyter notebook for NDVI calculation.",
+        "keywords": [
+            "ndvi",
+            "jupyter",
+            "notebook"
+        ],
+        "language": "en",
+        "applicableCollections": [
+            "https://eodatahub.org.uk/api/catalogue/stac/catalogs/public/catalogs/ceda-stac-catalogue/collections/sentinel2_ard"
+        ],
+        "contacts": [
+            {
+                "name": "EODH Platform Team",
+                "organization": "EO DataHub",
+                "roles": ["author"]
+            }
+        ],
+        "inputParameters": {
+            "input_cog": {
+                "label": "COG to calculate NDVI from",
+                "type": "raster"
+            }
+        },
+        "jupyter_kernel_info": {
+            "name": "python3",
+            "python_version": 3.11
+        },
+        "application:type": "jupyter-notebook",
+        "application:container": false,
+        "application:language": "Python",
+        "formats": [
+            {
+                "name": "Jupyter Notebook",
+                "mediaType": "application/x-ipynb+json"
+            }
+        ]
+    },
+    "links": [
+        {
+            "rel": "self",
+            "href": "https://eodatahub.org.uk/notebooks/ndvi-notebook.json",
+            "type": "application/geo+json",
+            "title": "This record"
+        },
+        {
+            "rel": "application",
+            "href": "https://example.com/ndvi_calculation.ipynb",
+            "type": "application/x-ipynb+json",
+            "title": "Jupyter Notebook",
+            "jupyter:kernel": {
+                "name": "python3",
+                "pythonVersion": 3.11
+            }
+        }
+    ]
+}

@@ -1,44 +1,59 @@
+"""Tests for authentication."""
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+from unittest.mock import MagicMock, patch
 
 import pytest
-from starlette import status
+from fastapi import HTTPException, status
 
 if TYPE_CHECKING:
-    from starlette.testclient import TestClient
+    from httpx import AsyncClient
 
 
-@pytest.mark.parametrize(
-    ("method", "endpoint"),
-    [("post", "workflows")],
-    ids=["POST-workflows"],
-)
-@pytest.mark.parametrize("api_version", ["/api/v1.0"], ids=["v1.0"])
-def test_functions_endpoint_returns_forbidden_error_when_no_token_specified_v1_0(
-    api_version: str,
-    method: str,
-    endpoint: str,
-    client: TestClient,
-) -> None:
-    response = getattr(client, method)(f"{api_version}/{endpoint}")
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+@pytest.mark.asyncio
+async def test_invalid_token_returns_401(client: AsyncClient, workflow_json: Any) -> None:
+    """Test that invalid token returns 401 Unauthorized."""
+    mock_settings = MagicMock()
+    mock_settings.environment = "prod"
+
+    with (
+        patch("wf_catalogue_service.api.auth.helpers.current_settings", return_value=mock_settings),
+        patch("wf_catalogue_service.api.auth.helpers.decode_token") as mock_decode,
+    ):
+        mock_decode.side_effect = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+        )
+
+        response = await client.post(
+            "/register",
+            json=workflow_json,
+            headers={"Authorization": "Bearer invalid-token"},
+        )
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        mock_decode.assert_called_once_with("invalid-token")
 
 
-@pytest.mark.parametrize(
-    ("method", "endpoint"),
-    [("post", "workflows")],
-    ids=["POST-submissions"],
-)
-@pytest.mark.parametrize("api_version", ["/api/v1.0"], ids=["v1.0"])
-def test_functions_endpoint_returns_unauthorized_error_when_bad_token_v1_0(
-    api_version: str,
-    method: str,
-    endpoint: str,
-    client: TestClient,
-) -> None:
-    response = getattr(client, method)(
-        f"{api_version}/{endpoint}",
-        headers={"Authorization": "Bearer bad_token"},
-    )
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+@pytest.mark.asyncio
+async def test_valid_token_allows_request(client: AsyncClient, workflow_json: Any) -> None:
+    """Test that valid token allows the request."""
+    mock_settings = MagicMock()
+    mock_settings.environment = "prod"
+
+    with (
+        patch("wf_catalogue_service.api.auth.helpers.current_settings", return_value=mock_settings),
+        patch("wf_catalogue_service.api.auth.helpers.decode_token") as mock_decode,
+    ):
+        mock_decode.return_value = {"sub": "user123"}
+
+        response = await client.post(
+            "/register",
+            json=workflow_json,
+            headers={"Authorization": "Bearer valid-token"},
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        mock_decode.assert_called_once_with("valid-token")

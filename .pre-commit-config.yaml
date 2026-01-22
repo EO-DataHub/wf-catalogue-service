@@ -63,6 +63,7 @@ repos:
         args: [ ]
         additional_dependencies:
           # Type stubs
+          - alembic
           - pytest
           # Use individual packages since types-all has been deprecated
           - types-DateTimeRange
