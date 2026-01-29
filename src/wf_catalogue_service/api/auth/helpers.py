@@ -29,8 +29,12 @@ TIMEOUT = 30
 
 def decode_token(token: str) -> dict[str, Any]:
     """Decodes JWT token."""
+    settings = current_settings()
+    if settings.eodh is None:
+        msg = "EODH settings required"
+        raise RuntimeError(msg)
     optional_custom_headers = {"User-agent": "custom-user-agent"}
-    jwks_client = PyJWKClient(current_settings().eodh.certs_url, headers=optional_custom_headers)
+    jwks_client = PyJWKClient(settings.eodh.certs_url, headers=optional_custom_headers)
 
     try:
         signing_key = jwks_client.get_signing_key_from_jwt(token)
@@ -52,7 +56,14 @@ def decode_token(token: str) -> dict[str, Any]:
 def validate_access_token(
     credential: Annotated[HTTPAuthorizationCredentials, Depends(jwt_bearer_scheme)],
 ) -> HTTPAuthorizationCredentials:
-    """Validates JWT token."""
+    """Validates JWT token.
+
+    Skips validation in local environment.
+
+    """
+    settings = current_settings()
+    if settings.environment.lower() == "local":
+        return credential
     decode_token(credential.credentials)
     return credential
 
@@ -89,6 +100,9 @@ def try_get_workspace_from_token_or_request_body(
 async def get_token_async() -> TokenResponse:
     """Gets token from EODH."""
     settings = current_settings()
+    if settings.eodh is None:
+        msg = "EODH settings required"
+        raise RuntimeError(msg)
     async with (
         aiohttp.ClientSession() as session,
         session.post(
@@ -112,6 +126,9 @@ async def get_token_async() -> TokenResponse:
 def get_token() -> TokenResponse:
     """Gets token from EODH."""
     settings = current_settings()
+    if settings.eodh is None:
+        msg = "EODH settings required"
+        raise RuntimeError(msg)
     response = requests.post(
         url=settings.eodh.token_url,
         headers=_HEADERS,

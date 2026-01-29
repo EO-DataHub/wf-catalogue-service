@@ -13,6 +13,21 @@ jobs:
     runs-on: ubuntu-latest
     environment: dev
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: catalogue
+          POSTGRES_PASSWORD: catalogue_dev_password
+          POSTGRES_DB: workflow_catalogue
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Check out the repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

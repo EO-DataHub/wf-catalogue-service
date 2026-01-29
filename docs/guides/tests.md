@@ -1,5 +1,13 @@
 This page describes how to run tests locally using `pytest`.
 
+## Prerequisites
+
+API tests require a PostgreSQL database. Start it with:
+
+```shell
+docker-compose up -d db
+```
+
 ## Instructions
 
 To run tests marked as `unit` tests:

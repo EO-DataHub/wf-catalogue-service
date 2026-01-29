@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: wf-catalogue-db
+    environment:
+      POSTGRES_USER: catalogue
+      POSTGRES_PASSWORD: catalogue_dev_password
+      POSTGRES_DB: workflow_catalogue
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U catalogue -d workflow_catalogue"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: wf-catalogue-api
+    command: >
+      sh -c "uv run alembic upgrade head &&
+             uv run uvicorn wf_catalogue_service.main:app --host 0.0.0.0 --port 8000 --reload"
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: local
+      DB__HOST: db
+      DB__PORT: "5432"
+      DB__NAME: workflow_catalogue
+      DB__USER: catalogue
+      DB__PASSWORD: catalogue_dev_password
+      EODH__BASE_URL: ${EODH__BASE_URL:-http://localhost}
+      EODH__REALM: ${EODH__REALM:-eodh}
+      EODH__USERNAME: ${EODH__USERNAME:-dev}
+      EODH__PASSWORD: ${EODH__PASSWORD:-dev}
+      EODH__CLIENT_ID: ${EODH__CLIENT_ID:-dev}
+      EODH__STAC_API_ENDPOINT: ${EODH__STAC_API_ENDPOINT:-http://localhost}
+      EODH__WORKSPACE_SERVICES_ENDPOINT: ${EODH__WORKSPACE_SERVICES_ENDPOINT:-http://localhost}
+      EODH__TMP_S3_CREDENTIALS_ENDPOINT: ${EODH__TMP_S3_CREDENTIALS_ENDPOINT:-http://localhost}
+    volumes:
+      - ./src:/home/jovyan/src:ro
+      - ./alembic:/home/jovyan/alembic:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

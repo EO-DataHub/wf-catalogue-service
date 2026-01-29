@@ -1,25 +1,37 @@
+"""Test configuration and fixtures."""
+
 from __future__ import annotations
 
 import json
+import os
 import pathlib
-import typing
+from typing import TYPE_CHECKING, Any
 
 import pytest
-import requests
-from starlette.testclient import TestClient
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from wf_catalogue_service import consts
-from wf_catalogue_service.api.auth.helpers import get_token
-from wf_catalogue_service.core.settings import current_settings
-from wf_catalogue_service.main import app as fast_api_app
+from wf_catalogue_service.db.models import Base, Catalogue
+from wf_catalogue_service.db.session import get_session
+from wf_catalogue_service.main import app_v1
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
     from _pytest.config import Config
     from _pytest.python import Function
-    from fastapi import FastAPI
+
+TEST_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    "postgresql+asyncpg://catalogue:catalogue_dev_password@localhost:5432/workflow_catalogue",
+)
+FIXTURES_PATH = pathlib.Path(__file__).parent / "fixtures"
 
 
 def pytest_collection_modifyitems(config: Config, items: list[Function]) -> None:  # noqa: ARG001
+    """Add markers based on test directory."""
     rootdir = pathlib.Path(consts.directories.ROOT_DIR)
     for item in items:
         rel_path = pathlib.Path(item.fspath).relative_to(rootdir)
@@ -28,48 +40,52 @@ def pytest_collection_modifyitems(config: Config, items: list[Function]) -> None
         item.add_marker(mark)
 
 
-@pytest.fixture(name="app")
-def app_fixture() -> FastAPI:
-    return fast_api_app
+@pytest_asyncio.fixture
+async def client() -> AsyncGenerator[AsyncClient]:
+    """Create async test client with test database."""
+    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
 
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
 
-@pytest.fixture(name="client")
-def client_fixture(app: FastAPI) -> TestClient:
-    return TestClient(app)
+    async with factory() as session:
+        catalogue = Catalogue(
+            id="eodh-workflows-notebooks",
+            type="Collection",
+            item_type="record",
+            title="EODH Workflows and Notebooks Catalog",
+            description="Test catalogue",
+            keywords=["test"],
+            language="en",
+            license="proprietary",
+        )
+        session.add(catalogue)
+        await session.commit()
 
+    async def override_get_session() -> AsyncGenerator[AsyncSession]:
+        async with factory() as session:
+            yield session
 
-@pytest.fixture(scope="module")
-def auth_token_module_scoped() -> str:
-    return get_token().access_token
+    app_v1.dependency_overrides[get_session] = override_get_session
+
+    async with AsyncClient(transport=ASGITransport(app=app_v1), base_url="http://test") as ac:
+        yield ac
+
+    app_v1.dependency_overrides.clear()
+    await engine.dispose()
 
 
 @pytest.fixture
-def auth_token_func_scoped() -> str:
-    return get_token().access_token
+def workflow_json() -> Any:
+    """Load workflow JSON fixture."""
+    with (FIXTURES_PATH / "ndvi-workflow.json").open() as f:
+        return json.load(f)
 
 
-@pytest.fixture(scope="session")
-def auth_token_session_scoped() -> str:
-    return get_token().access_token
-
-
-@pytest.fixture(scope="session")
-def ws_token(auth_token_session_scoped: str) -> typing.Generator[str]:
-    settings = current_settings()
-
-    response = requests.post(
-        settings.eodh.workspace_tokens_url,
-        headers={"Authorization": f"Bearer {auth_token_session_scoped}"},
-        timeout=30,
-        json={"name": "API Token", "scope": "offline_access", "expires": 30},
-    )
-
-    token_response = json.loads(response.text)
-    token = token_response["token"]
-    yield token
-
-    requests.delete(
-        f"{settings.eodh.workspace_tokens_url}/{token_response['id']}",
-        headers={"Authorization": f"Bearer {token}"},
-        timeout=30,
-    )
+@pytest.fixture
+def notebook_json() -> Any:
+    """Load notebook JSON fixture."""
+    with (FIXTURES_PATH / "ndvi-notebook.json").open() as f:
+        return json.load(f)
