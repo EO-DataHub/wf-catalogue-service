@@ -39,11 +39,11 @@ async def test_register_notebook_returns_201(client: AsyncClient, notebook_json:
 
 
 @pytest.mark.asyncio
-async def test_register_without_auth_returns_403(client: AsyncClient, workflow_json: Any) -> None:
-    """Test that POST /register without auth returns 403."""
+async def test_register_without_auth_returns_401(client: AsyncClient, workflow_json: Any) -> None:
+    """Test that POST /register without auth returns 401."""
     response = await client.post("/register", json=workflow_json)
 
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.asyncio
@@ -72,7 +72,7 @@ async def test_register_to_custom_catalogue(client: AsyncClient, workflow_json: 
 
     assert response.status_code == status.HTTP_201_CREATED
 
-    response = await client.get("/collections/custom-cat/items", headers=AUTH_HEADER)
+    response = await client.get("/collections/custom-cat/items")
     assert response.json()["total_items"] == 1
 
 
@@ -112,18 +112,18 @@ async def test_full_workflow_flow(client: AsyncClient, workflow_json: Any) -> No
     response = await client.post("/register", json=workflow_json, headers=AUTH_HEADER)
     assert response.status_code == status.HTTP_201_CREATED
 
-    response = await client.get(f"/collections/{CATALOGUE_ID}/items/{workflow_json['id']}", headers=AUTH_HEADER)
+    response = await client.get(f"/collections/{CATALOGUE_ID}/items/{workflow_json['id']}")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert data["id"] == workflow_json["id"]
     assert data["properties"]["title"] == workflow_json["properties"]["title"]
 
-    response = await client.get(f"/collections/{CATALOGUE_ID}/items", headers=AUTH_HEADER)
+    response = await client.get(f"/collections/{CATALOGUE_ID}/items")
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["total_items"] == 1
 
     response = await client.delete(f"/register/{workflow_json['id']}", headers=AUTH_HEADER)
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    response = await client.get(f"/collections/{CATALOGUE_ID}/items/{workflow_json['id']}", headers=AUTH_HEADER)
+    response = await client.get(f"/collections/{CATALOGUE_ID}/items/{workflow_json['id']}")
     assert response.status_code == status.HTTP_404_NOT_FOUND

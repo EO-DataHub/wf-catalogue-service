@@ -117,7 +117,6 @@ def _db_record_to_summary(record: Record) -> RecordSummary:
 @workflow_router.get("")
 async def get_collections(
     session: Annotated[AsyncSession, Depends(get_session)],
-    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
 ) -> list[CatalogueSummary]:
     """List all catalogues."""
     result = await session.execute(select(Catalogue))
@@ -138,7 +137,6 @@ async def get_items(
     catalogue_id: str,
     query: Annotated[RecordFilterRequest, Query()],
     session: Annotated[AsyncSession, Depends(get_session)],
-    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
 ) -> PagedResponse[RecordSummary]:
     """List records in a catalogue (OGC API Records compliant)."""
     select_query = select(Record).where(Record.catalogue_id == catalogue_id)
@@ -190,7 +188,6 @@ async def get_item(
     catalogue_id: str,
     record_id: str,
     session: Annotated[AsyncSession, Depends(get_session)],
-    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
 ) -> RecordResponse:
     """Get a single record by ID (OGC API Records compliant)."""
     # Get record
@@ -218,7 +215,6 @@ async def get_item(
 async def get_catalogue(
     catalogue_id: str,
     session: Annotated[AsyncSession, Depends(get_session)],
-    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
 ) -> CatalogueResponse:
     """Get catalogue metadata (OGC API Records compliant)."""
     query = (

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
 from wf_catalogue_service.api.health.routes import health_router
 from wf_catalogue_service.api.v1.workflows.routes import register_router, workflow_router
@@ -39,11 +38,3 @@ app = FastAPI(
 app_v1 = create_api_v1(app)
 app.mount("/api/latest", app_v1)
 app.mount("/api/v1.0", app_v1)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins="*",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)

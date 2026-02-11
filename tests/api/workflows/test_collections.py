@@ -17,7 +17,7 @@ AUTH_HEADER = {"Authorization": "Bearer test-token"}
 @pytest.mark.asyncio
 async def test_get_collections_returns_list(client: AsyncClient) -> None:
     """Test that GET /collections returns list of catalogues."""
-    response = await client.get("/collections", headers=AUTH_HEADER)
+    response = await client.get("/collections")
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -28,17 +28,9 @@ async def test_get_collections_returns_list(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_collections_without_auth_returns_403(client: AsyncClient) -> None:
-    """Test that GET /collections without auth returns 403."""
-    response = await client.get("/collections")
-
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-@pytest.mark.asyncio
 async def test_get_catalogue_returns_details(client: AsyncClient) -> None:
     """Test that GET /collections/{id} returns catalogue details."""
-    response = await client.get(f"/collections/{CATALOGUE_ID}", headers=AUTH_HEADER)
+    response = await client.get(f"/collections/{CATALOGUE_ID}")
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -50,7 +42,7 @@ async def test_get_catalogue_returns_details(client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_get_catalogue_not_found(client: AsyncClient) -> None:
     """Test that GET /collections/{id} returns 404 for unknown catalogue."""
-    response = await client.get("/collections/unknown-catalogue", headers=AUTH_HEADER)
+    response = await client.get("/collections/unknown-catalogue")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -58,7 +50,7 @@ async def test_get_catalogue_not_found(client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_get_items_returns_empty_list(client: AsyncClient) -> None:
     """Test that GET /collections/{id}/items returns empty list initially."""
-    response = await client.get(f"/collections/{CATALOGUE_ID}/items", headers=AUTH_HEADER)
+    response = await client.get(f"/collections/{CATALOGUE_ID}/items")
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -69,7 +61,7 @@ async def test_get_items_returns_empty_list(client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_get_item_not_found(client: AsyncClient) -> None:
     """Test that GET /collections/{id}/items/{id} returns 404 for unknown record."""
-    response = await client.get(f"/collections/{CATALOGUE_ID}/items/unknown-record", headers=AUTH_HEADER)
+    response = await client.get(f"/collections/{CATALOGUE_ID}/items/unknown-record")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 

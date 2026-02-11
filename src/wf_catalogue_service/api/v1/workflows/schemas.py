@@ -53,7 +53,7 @@ class RecordProperties(BaseModel):
     extent: dict[str, Any] | None = None
     # Notebook-specific fields
     jupyter_kernel_info: dict[str, Any] | None = Field(default=None, alias="jupyter_kernel_info")
-    formats: dict[str, Any] | None = None
+    formats: list[dict[str, Any]] | None = None
 
 
 class RecordCreate(BaseModel):
