@@ -62,6 +62,8 @@ repos:
         # Use pyproject.toml if possible instead of adding command line parameters here
         args: [ ]
         additional_dependencies:
+          # Runtime deps needed for mypy plugins
+          - pydantic
           # Type stubs
           - alembic
           - pytest
