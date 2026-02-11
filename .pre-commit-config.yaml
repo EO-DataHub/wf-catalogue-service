@@ -64,6 +64,7 @@ repos:
         additional_dependencies:
           # Runtime deps needed for mypy plugins
           - pydantic
+          - PyJWT
           # Type stubs
           - alembic
           - pytest
@@ -76,7 +77,6 @@ repos:
           - types-Markdown
           - types-MarkupSafe
           - types-Pillow
-          - types-PyJWT
           - types-PyMySQL
           - types-PyYAML
           - types-Routes

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from starlette import status
@@ -124,7 +124,7 @@ async def test_delete_collection_not_found_returns_404(client: AsyncClient) -> N
 
 
 @pytest.mark.asyncio
-async def test_delete_collection_with_records_returns_409(client: AsyncClient, workflow_json: dict) -> None:
+async def test_delete_collection_with_records_returns_409(client: AsyncClient, workflow_json: dict[str, Any]) -> None:
     """Test that DELETE /collections/{id} returns 409 if catalogue has records."""
     await client.post("/register", json=workflow_json, headers=AUTH_HEADER)
     response = await client.delete(f"/collections/{CATALOGUE_ID}", headers=AUTH_HEADER)
