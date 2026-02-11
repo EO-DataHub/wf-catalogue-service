@@ -15,6 +15,7 @@ from sqlalchemy.orm import selectinload
 from wf_catalogue_service.api.auth.helpers import validate_access_token
 from wf_catalogue_service.api.common.schemas import PagedResponse
 from wf_catalogue_service.api.v1.workflows.schemas import (
+    CatalogueCreate,
     CatalogueResponse,
     CatalogueSummary,
     ConceptSchema,
@@ -116,6 +117,7 @@ def _db_record_to_summary(record: Record) -> RecordSummary:
 @workflow_router.get("")
 async def get_collections(
     session: Annotated[AsyncSession, Depends(get_session)],
+    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
 ) -> list[CatalogueSummary]:
     """List all catalogues."""
     result = await session.execute(select(Catalogue))
@@ -136,6 +138,7 @@ async def get_items(
     catalogue_id: str,
     query: Annotated[RecordFilterRequest, Query()],
     session: Annotated[AsyncSession, Depends(get_session)],
+    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
 ) -> PagedResponse[RecordSummary]:
     """List records in a catalogue (OGC API Records compliant)."""
     select_query = select(Record).where(Record.catalogue_id == catalogue_id)
@@ -187,6 +190,7 @@ async def get_item(
     catalogue_id: str,
     record_id: str,
     session: Annotated[AsyncSession, Depends(get_session)],
+    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
 ) -> RecordResponse:
     """Get a single record by ID (OGC API Records compliant)."""
     # Get record
@@ -214,6 +218,7 @@ async def get_item(
 async def get_catalogue(
     catalogue_id: str,
     session: Annotated[AsyncSession, Depends(get_session)],
+    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
 ) -> CatalogueResponse:
     """Get catalogue metadata (OGC API Records compliant)."""
     query = (
@@ -264,25 +269,97 @@ async def get_catalogue(
 register_router = APIRouter(tags=["Registration"])
 
 
+@register_router.post("/collections", response_model=CatalogueResponse, status_code=HTTPStatus.CREATED)
+async def create_collection(
+    data: CatalogueCreate,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
+) -> CatalogueResponse:
+    """Create a new catalogue collection."""
+    existing = await session.get(Catalogue, data.id)
+    if existing:
+        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail="Catalogue with this ID already exists")
+
+    catalogue = Catalogue(
+        id=data.id,
+        type="Collection",
+        item_type="record",
+        title=data.title,
+        description=data.description,
+        keywords=data.keywords,
+        language=data.language,
+        license=data.license,
+        conforms_to=["http://www.opengis.net/doc/IS/ogcapi-records-1/1.0"],
+    )
+    session.add(catalogue)
+    await session.commit()
+    await session.refresh(catalogue)
+
+    return CatalogueResponse(
+        id=catalogue.id,
+        type="Collection",
+        item_type=catalogue.item_type,
+        conforms_to=catalogue.conforms_to or [],
+        title=catalogue.title,
+        description=catalogue.description,
+        keywords=catalogue.keywords,
+        themes=[],
+        language=catalogue.language,
+        created=catalogue.created,
+        updated=catalogue.updated,
+        contacts=[],
+        license=catalogue.license,
+        links=[],
+    )
+
+
+@register_router.delete("/collections/{catalogue_id}", status_code=HTTPStatus.NO_CONTENT)
+async def delete_collection(
+    catalogue_id: str,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
+) -> None:
+    """Delete a catalogue collection."""
+    catalogue = await session.get(Catalogue, catalogue_id)
+    if not catalogue:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Catalogue not found")
+
+    record_count = await session.scalar(
+        select(func.count()).select_from(select(Record).where(Record.catalogue_id == catalogue_id).subquery())
+    )
+    if record_count:
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail=f"Catalogue still contains {record_count} record(s). Delete them first.",
+        )
+
+    await session.execute(delete(Contact).where(Contact.entity_id == catalogue_id, Contact.entity_type == "catalogue"))
+    await session.execute(delete(Link).where(Link.entity_id == catalogue_id, Link.entity_type == "catalogue"))
+    await session.delete(catalogue)
+    await session.commit()
+
+
 @register_router.post("/register", response_model=RecordResponse, status_code=HTTPStatus.CREATED)
 async def register_record(
     data: RecordCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
     credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
+    catalogue_id: str = Query(default=DEFAULT_CATALOGUE_ID, description="Target catalogue ID"),
 ) -> RecordResponse:
     """Register a new workflow/notebook record."""
-    # Check for existing record
+    catalogue = await session.get(Catalogue, catalogue_id)
+    if not catalogue:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=f"Catalogue '{catalogue_id}' not found")
+
     existing = await session.get(Record, data.id)
     if existing:
         raise HTTPException(status_code=HTTPStatus.CONFLICT, detail="Record with this ID already exists")
 
-    # Determine record type from properties
     record_type = RecordType(data.properties.type)
 
-    # Create record (auto-assign to default catalogue)
     record = Record(
         id=data.id,
-        catalogue_id=DEFAULT_CATALOGUE_ID,
+        catalogue_id=catalogue_id,
         type=record_type,
         geometry=data.geometry,
         conforms_to=data.conforms_to,

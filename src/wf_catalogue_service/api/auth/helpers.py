@@ -10,7 +10,7 @@ import jwt.exceptions
 import requests
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jwt import PyJWKClient  # type: ignore[attr-defined]
+from jwt import PyJWKClient
 
 from wf_catalogue_service.api.auth.schemas import IntrospectResponse, TokenResponse
 from wf_catalogue_service.core.settings import current_settings
@@ -38,7 +38,7 @@ def decode_token(token: str) -> dict[str, Any]:
 
     try:
         signing_key = jwks_client.get_signing_key_from_jwt(token)
-        return jwt.decode(
+        result: dict[str, Any] = jwt.decode(
             token,
             signing_key.key,
             audience=["oauth2-proxy-workspaces", "oauth2-proxy", "account"],
@@ -51,6 +51,8 @@ def decode_token(token: str) -> dict[str, Any]:
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         ) from ex
+    else:
+        return result
 
 
 def validate_access_token(
@@ -115,7 +117,7 @@ async def get_token_async() -> TokenResponse:
                 "grant_type": "password",
                 "scope": "openid",
             },
-            timeout=TIMEOUT,
+            timeout=aiohttp.ClientTimeout(total=TIMEOUT),
         ) as response,
     ):
         if response.status != status.HTTP_200_OK:

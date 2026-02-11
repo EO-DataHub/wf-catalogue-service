@@ -53,7 +53,7 @@ class RecordProperties(BaseModel):
     extent: dict[str, Any] | None = None
     # Notebook-specific fields
     jupyter_kernel_info: dict[str, Any] | None = Field(default=None, alias="jupyter_kernel_info")
-    formats: list[dict[str, Any]] | None = None
+    formats: dict[str, Any] | None = None
 
 
 class RecordCreate(BaseModel):
@@ -115,6 +115,17 @@ class ThemeSchema(BaseModel):
 
     scheme: str | None = None
     concepts: list[ConceptSchema] = Field(default_factory=list)
+
+
+class CatalogueCreate(BaseModel):
+    """Input for creating a new catalogue (OGC Collection)."""
+
+    id: str
+    title: str
+    description: str
+    keywords: list[str] = Field(default_factory=list)
+    language: str = "en"
+    license: str = "proprietary"
 
 
 class CatalogueSummary(BaseModel):
