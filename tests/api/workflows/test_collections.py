@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from starlette import status
@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from httpx import AsyncClient
 
 CATALOGUE_ID = "eodh-workflows-notebooks"
+AUTH_HEADER = {"Authorization": "Bearer test-token"}
 
 
 @pytest.mark.asyncio
@@ -63,3 +64,61 @@ async def test_get_item_not_found(client: AsyncClient) -> None:
     response = await client.get(f"/collections/{CATALOGUE_ID}/items/unknown-record")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.asyncio
+async def test_create_collection_returns_201(client: AsyncClient) -> None:
+    """Test that POST /collections creates a new catalogue."""
+    response = await client.post(
+        "/collections",
+        json={"id": "test-collection", "title": "Test", "description": "Test collection"},
+        headers=AUTH_HEADER,
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    data = response.json()
+    assert data["id"] == "test-collection"
+    assert data["type"] == "Collection"
+    assert data["title"] == "Test"
+
+
+@pytest.mark.asyncio
+async def test_create_collection_duplicate_returns_409(client: AsyncClient) -> None:
+    """Test that POST /collections with existing ID returns 409."""
+    response = await client.post(
+        "/collections",
+        json={"id": CATALOGUE_ID, "title": "Duplicate", "description": "Duplicate"},
+        headers=AUTH_HEADER,
+    )
+
+    assert response.status_code == status.HTTP_409_CONFLICT
+
+
+@pytest.mark.asyncio
+async def test_delete_collection_returns_204(client: AsyncClient) -> None:
+    """Test that DELETE /collections/{id} deletes an empty catalogue."""
+    await client.post(
+        "/collections",
+        json={"id": "to-delete", "title": "Delete me", "description": "Temporary"},
+        headers=AUTH_HEADER,
+    )
+    response = await client.delete("/collections/to-delete", headers=AUTH_HEADER)
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+@pytest.mark.asyncio
+async def test_delete_collection_not_found_returns_404(client: AsyncClient) -> None:
+    """Test that DELETE /collections/{id} returns 404 for unknown catalogue."""
+    response = await client.delete("/collections/nonexistent", headers=AUTH_HEADER)
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.asyncio
+async def test_delete_collection_with_records_returns_409(client: AsyncClient, workflow_json: dict[str, Any]) -> None:
+    """Test that DELETE /collections/{id} returns 409 if catalogue has records."""
+    await client.post("/register", json=workflow_json, headers=AUTH_HEADER)
+    response = await client.delete(f"/collections/{CATALOGUE_ID}", headers=AUTH_HEADER)
+
+    assert response.status_code == status.HTTP_409_CONFLICT

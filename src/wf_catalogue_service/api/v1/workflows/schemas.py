@@ -117,6 +117,17 @@ class ThemeSchema(BaseModel):
     concepts: list[ConceptSchema] = Field(default_factory=list)
 
 
+class CatalogueCreate(BaseModel):
+    """Input for creating a new catalogue (OGC Collection)."""
+
+    id: str
+    title: str
+    description: str
+    keywords: list[str] = Field(default_factory=list)
+    language: str = "en"
+    license: str = "proprietary"
+
+
 class CatalogueSummary(BaseModel):
     """Catalogue summary for list responses."""
 

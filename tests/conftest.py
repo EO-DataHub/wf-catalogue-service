@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from wf_catalogue_service import consts
@@ -44,6 +45,13 @@ def pytest_collection_modifyitems(config: Config, items: list[Function]) -> None
 async def client() -> AsyncGenerator[AsyncClient]:
     """Create async test client with test database."""
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+    except OSError:
+        await engine.dispose()
+        pytest.skip("PostgreSQL not available")
     factory = async_sessionmaker(engine, expire_on_commit=False)
 
     async with engine.begin() as conn:
