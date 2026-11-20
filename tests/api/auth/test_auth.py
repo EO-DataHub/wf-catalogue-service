@@ -38,16 +38,17 @@ async def test_invalid_token_returns_401(client: AsyncClient, workflow_json: Any
 
 
 @pytest.mark.asyncio
-async def test_valid_token_allows_request(client: AsyncClient, workflow_json: Any) -> None:
-    """Test that valid token allows the request."""
+async def test_valid_token_with_write_role_allows_request(client: AsyncClient, workflow_json: Any) -> None:
+    """Test that a valid token carrying the write role allows the request."""
     mock_settings = MagicMock()
     mock_settings.environment = "prod"
+    mock_settings.eodh.write_role = "writer"
 
     with (
         patch("wf_catalogue_service.api.auth.helpers.current_settings", return_value=mock_settings),
         patch("wf_catalogue_service.api.auth.helpers.decode_token") as mock_decode,
     ):
-        mock_decode.return_value = {"sub": "user123"}
+        mock_decode.return_value = {"sub": "user123", "realm_access": {"roles": ["writer"]}}
 
         response = await client.post(
             "/register",
@@ -56,4 +57,27 @@ async def test_valid_token_allows_request(client: AsyncClient, workflow_json: An
         )
 
         assert response.status_code == status.HTTP_201_CREATED
+        mock_decode.assert_called_once_with("valid-token")
+
+
+@pytest.mark.asyncio
+async def test_valid_token_without_write_role_returns_403(client: AsyncClient, workflow_json: Any) -> None:
+    """Test that a valid token without the write role is refused."""
+    mock_settings = MagicMock()
+    mock_settings.environment = "prod"
+    mock_settings.eodh.write_role = "writer"
+
+    with (
+        patch("wf_catalogue_service.api.auth.helpers.current_settings", return_value=mock_settings),
+        patch("wf_catalogue_service.api.auth.helpers.decode_token") as mock_decode,
+    ):
+        mock_decode.return_value = {"sub": "user123", "realm_access": {"roles": ["hub_user"]}}
+
+        response = await client.post(
+            "/register",
+            json=workflow_json,
+            headers={"Authorization": "Bearer valid-token"},
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
         mock_decode.assert_called_once_with("valid-token")

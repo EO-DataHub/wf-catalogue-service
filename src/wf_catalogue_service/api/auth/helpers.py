@@ -14,8 +14,10 @@ from jwt import PyJWKClient
 
 from wf_catalogue_service.api.auth.schemas import IntrospectResponse, TokenResponse
 from wf_catalogue_service.core.settings import current_settings
+from wf_catalogue_service.utils.logging import get_logger
 
 _HEADERS = {"Content-Type": "application/x-www-form-urlencoded"}
+_logger = get_logger(__name__)
 
 auth_router = APIRouter(
     prefix="/auth",
@@ -67,6 +69,48 @@ def validate_access_token(
     if settings.environment.lower() == "local":
         return credential
     decode_token(credential.credentials)
+    return credential
+
+
+def _realm_roles(claims: dict[str, Any]) -> list[str]:
+    """Returns the token's realm roles, or an empty list if the claim is missing or malformed.
+
+    `roles` must be a list, because `in` on a string would match substrings.
+
+    """
+    realm_access = claims.get("realm_access")
+    if not isinstance(realm_access, dict):
+        return []
+    roles = realm_access.get("roles")
+    if not isinstance(roles, list):
+        return []
+    return [role for role in roles if isinstance(role, str)]
+
+
+def require_write_role(
+    credential: Annotated[HTTPAuthorizationCredentials, Depends(jwt_bearer_scheme)],
+) -> HTTPAuthorizationCredentials:
+    """Validates the token and checks it has the realm role set by `EODH__WRITE_ROLE`.
+
+    Raises 401 for an invalid token and 403 if the role is missing. Like `validate_access_token`, skips both checks in
+    the local environment.
+
+    """
+    settings = current_settings()
+    if settings.environment.lower() == "local":
+        return credential
+    if settings.eodh is None:
+        msg = "EODH settings required"
+        raise RuntimeError(msg)
+    claims = decode_token(credential.credentials)
+    if settings.eodh.write_role not in _realm_roles(claims):
+        _logger.warning(
+            "Write denied: token for sub=%s azp=%s lacks realm role %s",
+            claims.get("sub"),
+            claims.get("azp"),
+            settings.eodh.write_role,
+        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
     return credential
 
 

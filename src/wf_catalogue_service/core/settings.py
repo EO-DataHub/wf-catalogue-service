@@ -17,10 +17,12 @@ from __future__ import annotations
 
 from urllib.parse import urljoin
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from wf_catalogue_service import consts
+
+DEFAULT_WRITE_ROLE = "wf_catalogue_writer"
 
 
 class DatabaseSettings(BaseModel):
@@ -84,6 +86,8 @@ class EODHSettings(OAuth2Settings):
     stac_api_endpoint: str
     workspace_services_endpoint: str
     tmp_s3_credentials_endpoint: str
+    # Keycloak realm role a token must carry to create or delete collections and records.
+    write_role: str = Field(default=DEFAULT_WRITE_ROLE, min_length=1)
 
     @property
     def workspace_tokens_url(self) -> str:

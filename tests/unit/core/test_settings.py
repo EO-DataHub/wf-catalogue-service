@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from wf_catalogue_service.core.settings import Settings, current_settings
+import pytest
+from pydantic import ValidationError
+
+from wf_catalogue_service.core.settings import DEFAULT_WRITE_ROLE, Settings, current_settings
 
 _TEST_ENV_VARS = {
     "ENVIRONMENT": "production",
@@ -32,3 +35,32 @@ def test_settings() -> None:
 def test_environment_variable_override() -> None:
     settings = Settings()
     assert settings.environment == "production"
+
+
+@patch.dict(
+    "os.environ",
+    _TEST_ENV_VARS,
+)
+def test_write_role_defaults() -> None:
+    settings = Settings()
+    assert settings.eodh is not None
+    assert settings.eodh.write_role == DEFAULT_WRITE_ROLE
+
+
+@patch.dict(
+    "os.environ",
+    {**_TEST_ENV_VARS, "EODH__WRITE_ROLE": "custom_writer"},
+)
+def test_write_role_from_environment() -> None:
+    settings = Settings()
+    assert settings.eodh is not None
+    assert settings.eodh.write_role == "custom_writer"
+
+
+@patch.dict(
+    "os.environ",
+    {**_TEST_ENV_VARS, "EODH__WRITE_ROLE": ""},
+)
+def test_empty_write_role_is_rejected() -> None:
+    with pytest.raises(ValidationError):
+        Settings()

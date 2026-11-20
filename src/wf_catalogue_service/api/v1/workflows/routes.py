@@ -12,7 +12,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from wf_catalogue_service.api.auth.helpers import validate_access_token
+from wf_catalogue_service.api.auth.helpers import require_write_role
 from wf_catalogue_service.api.common.schemas import PagedResponse
 from wf_catalogue_service.api.v1.workflows.schemas import (
     CatalogueCreate,
@@ -269,7 +269,7 @@ register_router = APIRouter(tags=["Registration"])
 async def create_collection(
     data: CatalogueCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
-    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
+    credential: Annotated[HTTPAuthorizationCredentials, Depends(require_write_role)],  # noqa: ARG001
 ) -> CatalogueResponse:
     """Create a new catalogue collection."""
     existing = await session.get(Catalogue, data.id)
@@ -313,7 +313,7 @@ async def create_collection(
 async def delete_collection(
     catalogue_id: str,
     session: Annotated[AsyncSession, Depends(get_session)],
-    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
+    credential: Annotated[HTTPAuthorizationCredentials, Depends(require_write_role)],  # noqa: ARG001
 ) -> None:
     """Delete a catalogue collection."""
     catalogue = await session.get(Catalogue, catalogue_id)
@@ -339,7 +339,7 @@ async def delete_collection(
 async def register_record(
     data: RecordCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
-    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
+    credential: Annotated[HTTPAuthorizationCredentials, Depends(require_write_role)],  # noqa: ARG001
     catalogue_id: str = Query(default=DEFAULT_CATALOGUE_ID, description="Target catalogue ID"),
 ) -> RecordResponse:
     """Register a new workflow/notebook record."""
@@ -414,7 +414,7 @@ async def register_record(
 async def delete_record(
     record_id: str,
     session: Annotated[AsyncSession, Depends(get_session)],
-    credential: Annotated[HTTPAuthorizationCredentials, Depends(validate_access_token)],  # noqa: ARG001
+    credential: Annotated[HTTPAuthorizationCredentials, Depends(require_write_role)],  # noqa: ARG001
 ) -> None:
     """Delete a workflow/notebook record."""
     record = await session.get(Record, record_id)
